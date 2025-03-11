@@ -1,5 +1,19 @@
 from socket import *
 
+def sendResponse(connectionSocket: socket, httpVersion: str, statusCode: str, body: str) -> None:
+    responseMessage = ""
+
+    responseMessage += f"{httpVersion} {statusCode}\r\n"
+    responseMessage += "\r\n"
+
+    connectionSocket.send(responseMessage.encode())
+
+    for char in body:
+        connectionSocket.send(char.encode())
+    
+    connectionSocket.close()
+    print("Successfully responded to a request")
+
 serverPort = 6969
 
 serverSocket = socket(AF_INET, SOCK_STREAM)
@@ -12,23 +26,22 @@ print('Ready to serve...')
 while True:
     connectionSocket, addr = serverSocket.accept()
     try:
-        message = connectionSocket.recv(1024).decode()
+        requestMessage = connectionSocket.recv(1024).decode().split()
 
-        filename = message.split()[1]
-        file = open(filename[1:])
+        httpVersion = requestMessage[2]
+        filename = requestMessage[1]
+        statusCode = "200 OK"
+        htmlData = open(filename[1:]).read()
 
-        outputData = file.read()
+        sendResponse(connectionSocket, httpVersion, statusCode, htmlData)
 
-        #Send the content of the requested file to the client
-
-        for i in range(0, len(outputData)):
-            connectionSocket.send(outputData[i].encode())
-
-        connectionSocket.send("\r\n".encode())
-        connectionSocket.close()
     except IOError:
-        errorMessage = "404 Not Found"
-        connectionSocket.send(errorMessage.encode())
-        connectionSocket.close()
+        httpVersion = requestMessage[2]
+        filename = "notFound.html"
+        statusCode = "404 Not Found"
+
+        htmlData = open(filename).read()
+
+        sendResponse(connectionSocket, httpVersion, statusCode, htmlData)
         
 serverSocket.close()
