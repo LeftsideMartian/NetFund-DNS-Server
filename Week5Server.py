@@ -1,9 +1,11 @@
 from socket import *
+from http import HTTPStatus
 
 def sendResponse(connectionSocket: socket, httpVersion: str, statusCode: str, body: str) -> None:
     responseMessage = ""
 
     responseMessage += f"{httpVersion} {statusCode}\r\n"
+    responseMessage += f"Content-Type: text/html\r\n"
     responseMessage += "\r\n"
 
     connectionSocket.send(responseMessage.encode())
@@ -14,7 +16,7 @@ def sendResponse(connectionSocket: socket, httpVersion: str, statusCode: str, bo
     connectionSocket.close()
     print("Successfully responded to a request")
 
-serverPort = 6969
+serverPort = 8080
 
 serverSocket = socket(AF_INET, SOCK_STREAM)
 serverSocket.bind(('', serverPort))
@@ -30,7 +32,7 @@ while True:
 
         httpVersion = requestMessage[2]
         filename = requestMessage[1]
-        statusCode = "200 OK"
+        statusCode = HTTPStatus.OK
         htmlData = open(filename[1:]).read()
 
         sendResponse(connectionSocket, httpVersion, statusCode, htmlData)
@@ -38,8 +40,7 @@ while True:
     except IOError:
         httpVersion = requestMessage[2]
         filename = "notFound.html"
-        statusCode = "404 Not Found"
-
+        statusCode = HTTPStatus.NOT_FOUND
         htmlData = open(filename).read()
 
         sendResponse(connectionSocket, httpVersion, statusCode, htmlData)
